@@ -398,6 +398,9 @@ class S3Storage implements WritableStorageInterface
         $resource->setSha1($sha1Hash);
         $resource->setMd5($md5Hash);
 
+        // Workaround for https://github.com/flownative/flow-aws-s3/issues/56
+        $resource->setMediaType(mime_content_type($temporaryPathAndFilename));
+
         try {
             $this->s3Client->headObject([
                 'Bucket' => $this->bucketName,
