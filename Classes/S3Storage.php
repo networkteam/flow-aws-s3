@@ -363,9 +363,8 @@ class S3Storage implements WritableStorageInterface
     public function getObjectsByCollection(CollectionInterface $collection, callable $callback = null)
     {
         $iteration = 0;
-        $iterator = $this->resourceRepository->findByCollectionNameIterator($collection->getName());
-        foreach ($this->resourceRepository->iterate($iterator, $callback) as $resource) {
-            /** @var PersistentResource $resource */
+        $resources = $this->resourceRepository->findByCollectionNameIterator($collection->getName());
+        foreach ($resources as $resource) {
             $object = new StorageObject();
             $object->setFilename($resource->getFilename());
             $object->setSha1($resource->getSha1());
@@ -394,6 +393,11 @@ class S3Storage implements WritableStorageInterface
      */
     protected function importTemporaryFile(string $temporaryPathAndFilename, string $collectionName): PersistentResource
     {
+
+        if (!is_file($temporaryPathAndFilename) || !is_readable($temporaryPathAndFilename)) {
+            throw new Exception(sprintf('Unable to read temporary file "%s"', $temporaryPathAndFilename), 1728923540);
+        }
+
         $sha1Hash = sha1_file($temporaryPathAndFilename);
         $objectName = $this->keyPrefix . $sha1Hash;
 
@@ -446,6 +450,8 @@ class S3Storage implements WritableStorageInterface
         } else {
             $this->systemLogger->info(sprintf('Did not import resource as object "%s" into bucket "%s" because that object already existed.', $objectName, $this->bucketName), LogEnvironment::fromMethodName(__METHOD__));
         }
+
+        unlink($temporaryPathAndFilename);
 
         return $resource;
     }
